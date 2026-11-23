@@ -43,6 +43,13 @@ dependencies after publication. Image publication does not authorize production
 replacement. Back up and validate the persistent Workspace with the candidate, then
 deploy its immutable digest. See [container instructions](../deploy/container/README.md).
 
+## Migration to 0.2.0
+
+`server.publicOrigin` is replaced by the list `server.publicOrigins`; the old key now fails
+configuration as unknown. Before starting 0.2.0, rewrite `publicOrigin: ORIGIN` as
+`publicOrigins: [ORIGIN]` and add any further proxy origins. Containers read
+`ATERM_PUBLIC_ORIGINS` (comma-separated) instead of `ATERM_PUBLIC_ORIGIN` at first initialization.
+
 ## Migration to 0.1.0
 
 The npm scope changes from `@agent-workshop` to `@garage49`; the executable remains

@@ -470,7 +470,7 @@ test.each([
   expect(serverClientUrl({ host, port: 43127 })).toBe(expected);
 });
 
-test('server configuration validates host, port, debounce and external selection', async () => {
+test('server configuration validates host, port, debounce, public origins and external selection', async () => {
   const f = await fixture();
   const config = await readFile(join(f.home, 'aterm.yaml'), 'utf8');
   const awaitAppConfig = (await f.app()).config;
@@ -489,12 +489,24 @@ test('server configuration validates host, port, debounce and external selection
     '{ port: 43127, host: "fe80::1%eth0" }',
     '{ port: 43127, debounceMs: -1 }',
     '{ port: 43127, externalDirectories: [src] }',
+    '{ port: 43127, publicOrigin: "https://aterm.example" }',
+    '{ port: 43127, publicOrigins: "https://aterm.example" }',
+    '{ port: 43127, publicOrigins: ["https://aterm.example/mcp"] }',
+    '{ port: 43127, publicOrigins: ["ftp://aterm.example"] }',
+    '{ port: 43127, publicOrigins: ["https://user@aterm.example"] }',
   ]) {
     await f.write('.aterm/aterm.yaml', config + '\nserver: ' + server);
     await expect(f.app()).rejects.toThrow();
   }
   await f.write('.aterm/aterm.yaml', config + '\nserver: { port: 43127 }');
   expect((await f.app()).config.server?.host).toBe('127.0.0.1');
+  expect((await f.app()).config.server?.publicOrigins).toEqual([]);
+  const origins = ['http://aterm.example.arpa', 'https://aterm.example'];
+  await f.write(
+    '.aterm/aterm.yaml',
+    config + `\nserver: { port: 43127, publicOrigins: ${JSON.stringify(origins)} }`,
+  );
+  expect((await f.app()).config.server?.publicOrigins).toEqual(origins);
 });
 
 test('configured external selection has local/HTTP parity, overrides and scoped read failures', async () => {

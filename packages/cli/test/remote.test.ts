@@ -60,7 +60,13 @@ async function fixture(invalid = false) {
         useViewpoints: [],
         sources: [],
         viewpoints: [],
-        server: { port: address, host: '127.0.0.1', debounceMs: 200, watchExternal: false },
+        server: {
+          port: address,
+          host: '127.0.0.1',
+          debounceMs: 200,
+          watchExternal: false,
+          publicOrigins: [],
+        },
       }
     : (await AtermApplication.open({ home: home.home })).config;
   const server = new AtermServer(config);
@@ -472,22 +478,35 @@ test('cold recovery starts through server run with invalid config and validates 
   expect(invalid.stderr).toContain('host');
 }, 30000);
 
-test('an explicitly configured proxy origin is accepted without trusting forwarded headers', async () => {
+test('each configured public origin is accepted without trusting forwarded headers', async () => {
   const { acceptsServerOrigin } = await import('../../core/src/server-module/address.js');
-  const address = { host: '127.0.0.1', port: 43127, publicOrigin: 'https://aterm.example' };
+  const publicOrigins = ['http://aterm.example.arpa', 'https://aterm.example'];
+  const address = { host: '127.0.0.1', port: 43127, publicOrigins };
+  for (const origin of publicOrigins) {
+    const host = new URL(origin).host;
+    expect(acceptsServerOrigin({ host, origin }, address)).toBe(true);
+    expect(acceptsServerOrigin({ host }, address)).toBe(true);
+    // A proxy may rewrite Host to the upstream while preserving one configured Origin.
+    expect(acceptsServerOrigin({ host: '127.0.0.1:43127', origin }, address)).toBe(true);
+    expect(acceptsServerOrigin({ host, origin: 'https://evil.example' }, address)).toBe(false);
+  }
+  // Public origins are not cross-origin grants for each other.
   expect(
-    acceptsServerOrigin({ host: 'aterm.example', origin: 'https://aterm.example' }, address),
-  ).toBe(true);
+    acceptsServerOrigin({ host: 'aterm.example', origin: 'http://aterm.example.arpa' }, address),
+  ).toBe(false);
   expect(
-    acceptsServerOrigin({ host: '127.0.0.1:43127', origin: 'https://aterm.example' }, address),
-  ).toBe(true);
-  expect(
-    acceptsServerOrigin({ host: 'aterm.example', origin: 'https://evil.example' }, address),
+    acceptsServerOrigin({ host: 'aterm.example.arpa', origin: 'https://aterm.example' }, address),
   ).toBe(false);
   expect(
     acceptsServerOrigin(
       { host: 'evil.example', 'x-forwarded-host': 'aterm.example', 'x-forwarded-proto': 'https' },
       address,
+    ),
+  ).toBe(false);
+  expect(
+    acceptsServerOrigin(
+      { host: 'aterm.example', origin: 'https://aterm.example' },
+      { ...address, publicOrigins: [] },
     ),
   ).toBe(false);
 });

@@ -39,14 +39,17 @@ export const serverSettingsSchema = z
       .default('127.0.0.1'),
     debounceMs: z.number().int().min(0).max(60000).default(200),
     watchExternal: z.boolean().default(true),
-    publicOrigin: z
-      .string()
-      .url()
-      .refine((value) => {
-        const url = new URL(value);
-        return ['http:', 'https:'].includes(url.protocol) && url.origin === value;
-      }, 'Expected an HTTP(S) origin without a path.')
-      .optional(),
+    publicOrigins: z
+      .array(
+        z
+          .string()
+          .url()
+          .refine((value) => {
+            const url = new URL(value);
+            return ['http:', 'https:'].includes(url.protocol) && url.origin === value;
+          }, 'Expected an HTTP(S) origin without a path.'),
+      )
+      .default([]),
     controlToken: z.string().min(32).optional(),
   })
   .strict();
@@ -75,7 +78,7 @@ export interface IAtermConfig {
     readonly host: string;
     readonly debounceMs: number;
     readonly watchExternal: boolean;
-    readonly publicOrigin?: string;
+    readonly publicOrigins: readonly string[];
     readonly controlToken?: string;
   };
   readonly externalSources?: Readonly<Record<string, string>>;

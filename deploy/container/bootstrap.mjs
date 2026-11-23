@@ -25,9 +25,12 @@ try {
   const config = parseDocument(await readFile(initialized.configPath, 'utf8'));
   config.setIn(['server', 'host'], '0.0.0.0');
   config.setIn(['server', 'port'], 43127);
-  if (process.env.ATERM_PUBLIC_ORIGIN) {
-    config.setIn(['server', 'publicOrigin'], process.env.ATERM_PUBLIC_ORIGIN);
-  }
+  // Origins contain no commas; the list keeps every presented proxy origin.
+  const publicOrigins = (process.env.ATERM_PUBLIC_ORIGINS ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  if (publicOrigins.length > 0) config.setIn(['server', 'publicOrigins'], publicOrigins);
   // Agent installation belongs on an Agent's machine, not on this server.
   config.delete('skills');
   await writeFile(initialized.configPath, config.toString());

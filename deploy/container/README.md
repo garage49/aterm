@@ -9,11 +9,11 @@ come from npm. Use only `deploy/container` as the build context.
 pnpm release:pack
 mkdir -p deploy/container/npm
 # Keep npm/ limited to the two tarballs for this version.
-cp dist/garage49-aterm-core-0.1.0.tgz dist/garage49-aterm-0.1.0.tgz deploy/container/npm/
+cp dist/garage49-aterm-core-0.2.0.tgz dist/garage49-aterm-0.2.0.tgz deploy/container/npm/
 docker build --platform linux/amd64 \
-  --build-arg VERSION=0.1.0 \
-  -t aterm:0.1.0 deploy/container
-node deploy/container/smoke.mjs aterm:0.1.0
+  --build-arg VERSION=0.2.0 \
+  -t aterm:0.2.0 deploy/container
+node deploy/container/smoke.mjs aterm:0.2.0
 ```
 
 The shared workflow populates ignored `deploy/container/npm/` and supplies `VERSION`.
@@ -36,7 +36,7 @@ docker run --rm --name aterm --read-only --cap-drop ALL \
   --security-opt no-new-privileges \
   --tmpfs /tmp:rw,nosuid,nodev \
   --mount type=volume,src=aterm-data,dst=/data \
-  -p 127.0.0.1:43127:43127 aterm:0.1.0
+  -p 127.0.0.1:43127:43127 aterm:0.2.0
 ```
 
 The image runs Linux amd64 / Node 24 as UID/GID 1000. Tini forwards signals to a
@@ -50,8 +50,9 @@ packaged Viewpoints, and removes client-side Agent installation hooks. Existing
 configuration, local Viewpoints and corpus files are never replaced by bootstrap.
 Built-in resources are loaded from the installed package.
 
-`ATERM_PUBLIC_ORIGIN=https://aterm.example` sets `server.publicOrigin` only when
-initializing a Home. To change an existing origin, edit its persistent YAML and
+`ATERM_PUBLIC_ORIGINS=https://aterm.example,http://aterm.example.arpa` sets
+`server.publicOrigins`, one entry per comma-separated origin, only when
+initializing a Home. To change existing origins, edit its persistent YAML and
 restart. Explicit CLI host/port flags override YAML. An explicit port also keeps
 the repair endpoint available when configuration is invalid.
 
@@ -86,6 +87,13 @@ verify a full restore into an isolated location, and validate that restored copy
 with the candidate image. Preserve authored business data, custom Viewpoints and
 Skills. Retain the previous image digest and backup until live checks pass.
 
+0.2.0 replaces `server.publicOrigin` with the list `server.publicOrigins` and
+`ATERM_PUBLIC_ORIGIN` with comma-separated `ATERM_PUBLIC_ORIGINS`. The old key is
+rejected as unknown, so a Home that sets it starts in repair mode: replace it in the
+persistent YAML when replacing the image, for example
+`publicOrigins: [http://aterm.example.arpa, https://aterm.example]`. Protocol 24
+and the persistent data format are unchanged.
+
 0.1.0 changes npm package scope to `@garage49` and installs packed build artifacts
 in the image. It retains protocol 24 and the same persistent data format. The
 localhost listener also uses the address families available to HTTP clients so
@@ -112,7 +120,8 @@ Use an authenticating TLS proxy for external access; do not publish an unauthent
 backend. `server.controlToken` protects the separate UI-control API, not MCP.
 
 The proxy must preserve an accepted Host and Origin. For a public browser,
-configure `server.publicOrigin` to the exact public origin. An MCP-only proxy may
+list every exact public origin in `server.publicOrigins`; each entry is accepted
+on its own and none grants access from another. An MCP-only proxy may
 omit Origin and use the backend Host. Untrusted forwarded headers do not grant
 access. Keep host paths, cluster credentials and unrelated secrets out of the mount.
 

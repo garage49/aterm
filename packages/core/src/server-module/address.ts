@@ -3,7 +3,7 @@ import type { IncomingHttpHeaders } from 'node:http';
 interface IServerAddress {
   readonly host: string;
   readonly port: number;
-  readonly publicOrigin?: string;
+  readonly publicOrigins?: readonly string[];
 }
 
 /** Listener and client URLs share IPv6 formatting and port normalization. */
@@ -32,18 +32,18 @@ export function acceptsServerOrigin(
   } catch {
     return false;
   }
-  if (address.publicOrigin) {
-    const publicUrl = new URL(address.publicOrigin);
-    const hostMatches = authority === publicUrl.host;
-    if (hostMatches && (headers.origin === undefined || headers.origin === publicUrl.origin))
-      return true;
-    if (headers.origin === publicUrl.origin) {
-      // A configured proxy may rewrite Host to the upstream while preserving Origin.
-      return acceptsServerOrigin(
-        { ...headers, origin: undefined },
-        { host: address.host, port: address.port },
-      );
-    }
+  const publicUrls = (address.publicOrigins ?? []).map((origin) => new URL(origin));
+  const direct = publicUrls.some(
+    (url) =>
+      authority === url.host && (headers.origin === undefined || headers.origin === url.origin),
+  );
+  if (direct) return true;
+  if (publicUrls.some((url) => headers.origin === url.origin)) {
+    // A configured proxy may rewrite Host to the upstream while preserving Origin.
+    return acceptsServerOrigin(
+      { ...headers, origin: undefined },
+      { host: address.host, port: address.port },
+    );
   }
   if (Number(requested.port || 80) !== address.port) return false;
   const bound = new URL(serverUrl(address)).hostname;

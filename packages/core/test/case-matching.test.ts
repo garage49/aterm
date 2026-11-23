@@ -261,7 +261,7 @@ test('HTTP dispatch and GraphQL expose both case modes without changing the publ
   await new Promise<void>((resolve) => probe.close(() => resolve()));
   const listening = new AtermServer({
     ...app.config,
-    server: { port, host: '127.0.0.1', debounceMs: 10, watchExternal: true },
+    server: { port, host: '127.0.0.1', debounceMs: 10, watchExternal: true, publicOrigins: [] },
   });
   await listening.start();
   try {

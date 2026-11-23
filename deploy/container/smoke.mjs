@@ -65,13 +65,13 @@ async function health() {
   assert.equal(response.status, 200);
   return response.json();
 }
-async function start(origin) {
+async function start(origins) {
   docker('run', '-d', '--name', name, '--network', 'bridge', '--read-only', '--cap-drop', 'ALL',
     '--security-opt', 'no-new-privileges', '--tmpfs', '/tmp:rw,nosuid,nodev',
     // Model the nested emptyDir used with an NFS Workspace in k3s.
     '--tmpfs', '/data/.aterm/cache/semantic:rw,uid=1000,gid=1000,nosuid,nodev',
     '--mount', `type=volume,src=${volume},dst=/data`,
-    '-e', `ATERM_PUBLIC_ORIGIN=${origin}`, image);
+    '-e', `ATERM_PUBLIC_ORIGINS=${origins}`, image);
   containerExists = true;
   // Reach only the private Docker bridge; do not publish a host port.
   const address = JSON.parse(docker('inspect', name))[0].NetworkSettings.Networks.bridge?.IPAddress;
@@ -126,7 +126,7 @@ let volumeExists = false;
 try {
   docker('volume', 'create', volume);
   volumeExists = true;
-  await start('http://aterm.example.test');
+  await start('http://aterm.example.test, https://aterm.example.test');
   const expectedVersion = JSON.parse(docker('image', 'inspect', image))[0].Config.Labels['org.opencontainers.image.version'];
   assert.ok(expectedVersion);
   assert.equal(client.getServerVersion().version, expectedVersion);
@@ -134,7 +134,7 @@ try {
   assert.equal(docker('exec', name, 'id', '-u'), '1000');
   console.log('PASS fresh nested-cache mount bootstrap, UID 1000, read-only rootfs');
   const config = await read('.aterm/aterm.yaml');
-  assert.match(config, /publicOrigin: http:\/\/aterm.example.test/);
+  assert.match(config, /publicOrigins:\s*- http:\/\/aterm.example.test\s*- https:\/\/aterm.example.test\n/);
   assert.match(config, /useDefaultKnowledge: true/);
   assert.match(config, /allowDefaultWrites: false/);
   assert.match(config, /useViewpoints: \[\s*specification, generic, domain, skill\s*\]/);

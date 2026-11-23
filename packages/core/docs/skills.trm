@@ -2496,7 +2496,7 @@ skill _Runtime_Management_Skill_ = {
   - Hosted stdio, remote HTTP MCP and explicit --server writes publish before completion.
   - host: 127.0.0.1 is local-only; 0.0.0.0 listens on IPv4 interfaces; :: selects IPv6 interfaces.
   - For external controllers, configure a controlToken of at least 32 characters and provide it to the client; use a proxy for HTTPS and authentication.
-  - Set publicOrigin to the externally presented origin behind a proxy. Public corpus reads and authenticated controls have different access rules.
+  - List every externally presented origin behind a proxy in publicOrigins. Public corpus reads and authenticated controls have different access rules.
   - Inspect the current server identity before restarting it. New installed code and changed host, port or token need a restart.
 
   > CLI --version changed, therefore an old running server has new code — BAD.

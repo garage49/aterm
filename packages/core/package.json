@@ -1,6 +1,6 @@
 {
   "name": "@garage49/aterm-core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Aterm language, corpus, authoring, server and shipped guidance.",
   "license": "0BSD",
   "engines": {

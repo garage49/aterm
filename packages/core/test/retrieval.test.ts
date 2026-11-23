@@ -402,7 +402,7 @@ test('HTTP discovery equals local discovery and Index build stays local', async 
   await new Promise<void>((resolve) => listener.close(() => resolve()));
   const server = new AtermServer({
     ...app.config,
-    server: { port, host: '127.0.0.1', debounceMs: 10, watchExternal: false },
+    server: { port, host: '127.0.0.1', debounceMs: 10, watchExternal: false, publicOrigins: [] },
   });
   await server.start();
   const send = async (query: unknown) =>

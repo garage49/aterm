@@ -60,8 +60,8 @@ export class AtermServer {
     if (!this.ui) throw new AtermError('ui.server', 'UI service is not running.');
     return this.ui.request(request);
   }
-  get publicOrigin(): string | undefined {
-    return this.config.server?.publicOrigin;
+  get publicOrigins(): readonly string[] {
+    return this.config.server?.publicOrigins ?? [];
   }
 
   get url(): string {
